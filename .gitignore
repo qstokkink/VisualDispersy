@@ -1,0 +1,6 @@
+.[key]
+.[pyc]
+.[pyo]
+/dispersy/*
+peercache.txt
+
