@@ -55,7 +55,8 @@ class VisualDispersy(Dispersy):
                                 if not did_have_senqueue:
                                     eself._process_sendqueue()
                     except CommunityNotFoundException:
-                        print "[ERROR] DROPPING UNKNOWN COMMUNITY MESSAGE"
+                        pass
+                        
                     fakepackets.append((sock_addr, data))
             # Not just DV control messages
             if len(fakepackets) > 0:
