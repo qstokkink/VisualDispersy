@@ -114,6 +114,7 @@ def join_flood_overlay(dispersy, masterkey, peerid, totalpeers, new_message_coun
     community.total_message_count = total_message_count
     community.peerid = peerid
     community.totalpeers = totalpeers
+    community.vz_report_target("messages", 0, total_message_count)
 
     print "%d] Joined community" % (dispersy.lan_address[1])
 
