@@ -17,7 +17,9 @@ from gi.repository import Gtk, GObject
 from twisted.internet import reactor
 from twisted.internet.error import ReactorNotRunning
 
+
 class Visualizer:
+
     """Object to manage graph windows and their contents.
     """
 
@@ -36,25 +38,38 @@ class Visualizer:
         else:
             num = 0
             for v in graph.vertices():
-                rads = 2.0*math.pi/totalvs*num
+                rads = 2.0 * math.pi / totalvs * num
                 num = num + 1
-                x = radius*math.cos(rads)
-                y = radius*math.sin(rads)
-                pmap[v] = [x + 0.2*(radius if x > 0 else -radius), y]
+                x = radius * math.cos(rads)
+                y = radius * math.sin(rads)
+                pmap[v] = [x + 0.2 * (radius if x > 0 else -radius), y]
         return pmap
 
     def __init__(self, closecallback):
         """Initialize fields.
         """
-        self.graphs = {}        # Graph per community name {str/community_name:Graph}
-        self.vertices = {}      # Vertex per community name for a node identifier {str/node_id:{str/community_name:Vertex}}
-        self.vlabels = {}       # Vertex labels per community name (formatted vtargets) {str/community_name:PropertyMap}
-        self.vcolors = {}       # Vertex colors per community name {str/community_name:PropertyMap}
-        self.vtargets = {}      # Vertex targets per node identifier {str/node_id:{str/target_name:str/value}}
-        self.windows = {}       # Window object per community name {str/community_name:GraphWindow}
-        self.edgequeue = {}     # Edge buffer per community name {str/community_name:[(int/from,int/to)]}
-        self.glock = threading.RLock()      # Reentrant lock for modifying graph data
-        self.elocks = {}                    # List of reentrant locks for modifying edges in different graphs
+        self.graphs = {}
+            # Graph per community name {str/community_name:Graph}
+        self.vertices = {}
+            # Vertex per community name for a node identifier
+            # {str/node_id:{str/community_name:Vertex}}
+        self.vlabels = {}
+            # Vertex labels per community name (formatted vtargets)
+            # {str/community_name:PropertyMap}
+        self.vcolors = {}
+            # Vertex colors per community name {str/community_name:PropertyMap}
+        self.vtargets = {}
+            # Vertex targets per node identifier
+            # {str/node_id:{str/target_name:str/value}}
+        self.windows = {}
+            # Window object per community name {str/community_name:GraphWindow}
+        self.edgequeue = {}
+            # Edge buffer per community name
+            # {str/community_name:[(int/from,int/to)]}
+        self.glock = threading.RLock()
+                                     # Reentrant lock for modifying graph data
+        self.elocks = {}
+            # List of reentrant locks for modifying edges in different graphs
         self.closecallback = closecallback  # Callback for when we want to close
         self.alive = True                   # Experiment is running
 
@@ -72,7 +87,7 @@ class Visualizer:
     def assert_community(self, name):
         """Make sure we own a graph, window, and vertex property maps for some community name.
         """
-        if not self.graphs.has_key(name):
+        if name not in self.graphs:
             self.glock.acquire()
             self.elocks[name] = threading.RLock()
             self.edgequeue[name] = []
@@ -141,7 +156,13 @@ class Visualizer:
         """
         self.glock.acquire()
         for name in self.graphs:
-            self.set_node_color(name, str(pid), [(1-pct)*0.640625, pct*0.640625, 0, 0.9])
+            self.set_node_color(
+                name,
+                str(pid),
+                [(1 - pct) * 0.640625,
+                 pct * 0.640625,
+                 0,
+                 0.9])
         self.glock.release()
 
     def update_view(self):
@@ -160,13 +181,23 @@ class Visualizer:
         # Make sure a window for each graph exists
         for name in gvs:
             if not name in self.windows:
-                window = GraphWindow(gvs[name], self._ring_layout(gvs[name]), (800,400), fit_area=0.95)
-                window.graph.handler_block_by_func(window.graph.motion_notify_event)
-                window.graph.handler_block_by_func(window.graph.button_press_event)
-                window.graph.handler_block_by_func(window.graph.button_release_event)
+                window = GraphWindow(
+                    gvs[name],
+                    self._ring_layout(gvs[name]),
+                    (800,
+                     400),
+                    fit_area=0.95)
+                window.graph.handler_block_by_func(
+                    window.graph.motion_notify_event)
+                window.graph.handler_block_by_func(
+                    window.graph.button_press_event)
+                window.graph.handler_block_by_func(
+                    window.graph.button_release_event)
                 window.graph.handler_block_by_func(window.graph.scroll_event)
-                window.graph.handler_block_by_func(window.graph.key_press_event)
-                window.graph.handler_block_by_func(window.graph.key_release_event)
+                window.graph.handler_block_by_func(
+                    window.graph.key_press_event)
+                window.graph.handler_block_by_func(
+                    window.graph.key_release_event)
                 window.connect("delete_event", self.__killall)
                 window.set_title(name)
                 window.show_all()
@@ -194,8 +225,10 @@ class Visualizer:
             gw.regenerate_surface()
             gw.queue_draw()
         return self.alive
-                
+
+
 class VisualServer:
+
     """Object to handle client communication and forward it
         to the graph window handler (Visualizer).
     """
@@ -203,8 +236,10 @@ class VisualServer:
     def __init__(self):
         """Initialize all of our fields
         """
-        self.endlist = []                           # List of ids which want to end
-        self.allids = []                            # List of ids we have encountered
+        self.endlist = []
+            # List of ids which want to end
+        self.allids = []
+            # List of ids we have encountered
         self.isopen = False                         # Experiment is done or forced exited
         self.visualizer = Visualizer(self.close)    # Visualizer object
 
@@ -229,7 +264,7 @@ class VisualServer:
                 reactor.callInThread(self.client, conn, addr)
             except socket.error:    # Timeout, check if alive and keep going
                 pass
-            
+
     def client(self, connection, address):
         """Handle a single client.
             Delegate input to the proper handler functions.
@@ -241,9 +276,11 @@ class VisualServer:
                 data = connection.recv(1024)
             except socket.error:
                 continue
-            if not data: break
+            if not data:
+                break
             for gdata in string.split(data, ';'):
-                if not gdata: break
+                if not gdata:
+                    break
                 content = string.split(gdata[3:], ',')
                 if gdata.startswith('CON'):
                     self.handle_connect(*content)
@@ -295,9 +332,14 @@ class VisualServer:
         """Set some value of a custom target.
         """
         self.assert_id(pid)
-        self.visualizer.set_target_value(str(pid), dict_entry, str(received) + "/" + str(target))
+        self.visualizer.set_target_value(
+            str(pid),
+            dict_entry,
+            str(received) + "/" + str(target))
         self.visualizer.format_node_label(str(pid))
-        self.visualizer.draw_node_finish(str(pid), float(received)/float(target))
+        self.visualizer.draw_node_finish(
+            str(pid),
+            float(received) / float(target))
 
     def handle_end(self, pid):
         """Signal some identifier wants to exit and wait for the experiment to end.

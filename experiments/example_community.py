@@ -1,4 +1,4 @@
-"""An example community (FloodCommunity) to both show 
+"""An example community (FloodCommunity) to both show
 how Dispersy works and how VisualDispersy works.
 Credit for the original tutorial Community goes to Boudewijn Schoon.
 """
@@ -31,7 +31,9 @@ from dispersy.resolution import PublicResolution
 
 from dispersyviz.visualdispersy import VisualDispersy, VisualCommunity
 
+
 class FloodCommunity(VisualCommunity):
+
     """A simple community to exemplify Dispersy behavior.
     """
 
@@ -39,7 +41,12 @@ class FloodCommunity(VisualCommunity):
         """Callback for when Dispersy initializes this community.
             Note that this function signature is a Dispersy requirement.
         """
-        super(FloodCommunity, self).__init__(dispersy, master_member, my_member)
+        super(
+            FloodCommunity,
+            self).__init__(
+                dispersy,
+                master_member,
+         my_member)
         self.message_received = 0
 
     def initiate_conversions(self):
@@ -58,15 +65,30 @@ class FloodCommunity(VisualCommunity):
         """
         messages = super(FloodCommunity, self).initiate_meta_messages()
         ourmessages = [Message(self,
-                        u"flood",                               # Unique identifier
-                        MemberAuthentication(encoding="sha1"),  # Member identifier hash type
-                        PublicResolution(),                     # All members can add messages
-                        FullSyncDistribution(enable_sequence_number=False, synchronization_direction=u"ASC", priority=255), # Synchronize without sequence number, delivering messages with the lowest (Lamport) global time first and the highest priority
-                        CommunityDestination(node_count=10), # Push to >AT MOST< 10 other nodes initially
-                        FloodPayload(),                         # The object to actually carry our payload
-                        self.check_flood,                       # Callback to validate a received message
-                        self.on_flood,                          # Callback to actually handle a validated message
-                        batch=BatchConfiguration(3.0+random.random()))] # Amount of time (seconds) to save up messages before handling them
+                               u"flood",
+                               # Unique identifier
+                               MemberAuthentication(
+                               encoding="sha1"),
+                               # Member identifier hash type
+                               PublicResolution(),
+                               # All members can add messages
+                               FullSyncDistribution(
+                               enable_sequence_number=False,
+                               synchronization_direction=u"ASC",
+                               priority=255),
+                               # Synchronize without sequence number, delivering messages with the lowest
+                               # (Lamport) global time first and the highest priority
+                               CommunityDestination(
+                               node_count=10),
+                               # Push to >AT MOST< 10 other nodes initially
+                               FloodPayload(),
+                               # The object to actually carry our payload
+                               self.check_flood,
+                               # Callback to validate a received message
+                               self.on_flood,
+                               # Callback to actually handle a validated
+                               # message
+                               batch=BatchConfiguration(3.0 + random.random()))]  # Amount of time (seconds) to save up messages before handling them
         messages.extend(ourmessages)
         return messages
 
@@ -76,15 +98,21 @@ class FloodCommunity(VisualCommunity):
         self.start_flood_time = time.time()
         if count <= 0:
             return
-        # Retrieve the meta object we defined in initiate_meta_messages() 
+        # Retrieve the meta object we defined in initiate_meta_messages()
         meta = self.get_meta_message(u"flood")
         # Instantiate the message
-        messages = [meta.impl(authentication=(self.my_member,), # This client signs this message
-                              #distribution=(self.claim_global_time(),meta.distribution.claim_sequence_number()), # When you enable sequence numbers (see initiate_meta_messages)
-                              distribution=(self.claim_global_time(),), # Without sequence numbers you just need our value of the Lamport clock
-                              payload=("flood #%d" % (i+(self.peerid-1)*count),)) # Some arbitrary message contents
-                    for i
-                    in xrange(count)] 
+        messages = [meta.impl(authentication=(self.my_member,),  # This client signs this message
+                              # distribution=(self.claim_global_time(),meta.distribution.claim_sequence_number()),
+                              # # When you enable sequence numbers (see
+                              # initiate_meta_messages)
+                              distribution=(
+                              self.claim_global_time(),
+        ),
+            # Without sequence numbers you just need our
+                              # value of the Lamport clock
+                              payload=("flood #%d" % (i + (self.peerid - 1) * count),))  # Some arbitrary message contents
+            for i
+                    in xrange(count)]
         # Spread this message into the network (including to ourselves)
         self.dispersy.store_update_forward(messages, True, True, True)
 
@@ -101,7 +129,10 @@ class FloodCommunity(VisualCommunity):
         """
         self.message_received += len(messages)
         # Report to Visual Dispersy
-        self.vz_report_target("messages", self.message_received, self.total_message_count)
+        self.vz_report_target(
+            "messages",
+            self.message_received,
+            self.total_message_count)
         if self.message_received == self.total_message_count:
             # Wait for the experiment to end IN A THREAD
             # If you don't do this YOU WILL BLOCK DISPERSY COMPLETELY
@@ -113,15 +144,20 @@ class FloodCommunity(VisualCommunity):
         self.vz_wait_for_experiment_end()
         self.dispersy.stop()
 
+
 class FloodPayload(Payload):
+
     """The data container for FloodCommunity communications.
     """
     class Implementation(Payload.Implementation):
+
         def __init__(self, meta, data):
             super(FloodPayload.Implementation, self).__init__(meta)
             self.data = data
 
+
 class FloodConversion(BinaryConversion):
+
     """Convert the payload into binary data (/a string) which can be
         sent over the internet.
     """
@@ -129,8 +165,14 @@ class FloodConversion(BinaryConversion):
     def __init__(self, community):
         """Initialize the new Conversion object
         """
-        super(FloodConversion, self).__init__(community, "\x01")    # Use community version 1 (only communicates with other version 1's)
-        self.define_meta_message(chr(1), community.get_meta_message(u"flood"), self._encode_flood, self._decode_flood)  # Our only message type is assigned id 1 (byte), with encode and decode callbacks
+        super(FloodConversion, self).__init__(community, "\x01")
+              # Use community version 1 (only communicates with other version
+              # 1's)
+        self.define_meta_message(
+            chr(1),
+            community.get_meta_message(u"flood"),
+            self._encode_flood,
+            self._decode_flood)  # Our only message type is assigned id 1 (byte), with encode and decode callbacks
 
     def _encode_flood(self, message):
         """The encode callback to convert a Message into a binary representation (string).
@@ -153,7 +195,14 @@ class FloodConversion(BinaryConversion):
 
         return offset, placeholder.meta.payload.implement(data_payload)
 
-def join_flood_overlay(dispersy, masterkey, peerid, totalpeers, new_message_count, total_message_count):
+
+def join_flood_overlay(
+    dispersy,
+     masterkey,
+     peerid,
+     totalpeers,
+     new_message_count,
+     total_message_count):
     """Join our custom FloodCommunity.
     """
     # Use our bogus master member
@@ -161,7 +210,8 @@ def join_flood_overlay(dispersy, masterkey, peerid, totalpeers, new_message_coun
     # Register our client with Dispersy
     my_member = dispersy.get_new_member()
     # Register our community with Dispersy
-    community = FloodCommunity.init_community(dispersy, master_member, my_member)
+    community = FloodCommunity.init_community(
+        dispersy, master_member, my_member)
     # Initialize our custom community, because we can't change the constructor
     community.total_message_count = total_message_count
     community.peerid = peerid
@@ -181,6 +231,7 @@ def join_flood_overlay(dispersy, masterkey, peerid, totalpeers, new_message_coun
     # of messages with the Community.
     community.create_flood(new_message_count)
 
+
 def generateMasterkey():
     """Generate an M2Crypto Elliptic Curve key.
     """
@@ -191,8 +242,9 @@ def generateMasterkey():
     rawpubkey = membuffer.read()
     membuffer.reset()
     fpubkey = rawpubkey[27:]
-    fpubkey = fpubkey[:string.find(fpubkey,'-')]
-    return fpubkey # BASE64 ENCODED
+    fpubkey = fpubkey[:string.find(fpubkey, '-')]
+    return fpubkey  # BASE64 ENCODED
+
 
 def establishMasterkey(peerid):
     """Get the master key for this community.
@@ -216,6 +268,7 @@ def establishMasterkey(peerid):
     keyfile.close()
     return masterkey
 
+
 def stopOnDispersy(dispersy, reactor):
     """Exit when Dispersy closes.
     """
@@ -224,7 +277,13 @@ def stopOnDispersy(dispersy, reactor):
         time.sleep(10.0)
     reactor.stop()
 
-def main(peerid, totalpeers, new_message_count, total_message_count, vz_server_port):
+
+def main(
+    peerid,
+     totalpeers,
+     new_message_count,
+     total_message_count,
+     vz_server_port):
     """VisualDispersy will call this function with:
         - peerid: [1~totalpeers] our id
         - totalpeers: the total amount of peers in our experiment
@@ -234,10 +293,11 @@ def main(peerid, totalpeers, new_message_count, total_message_count, vz_server_p
     """
     # Get the master key
     masterkey = establishMasterkey(peerid)
-    
+
     # Make an endpoint (starting at port 10000, incrementing until we can open)
     endpoint = StandaloneEndpoint(10000)
-    # Create a VisualDispersy instance for the endpoint and store the SQLite 3 database in RAM
+    # Create a VisualDispersy instance for the endpoint and store the SQLite 3
+    # database in RAM
     dispersy = VisualDispersy(endpoint, u".", u":memory:")
     # Initialize the VisualDispersy server connection
     dispersy.vz_init_server_connection(vz_server_port)
@@ -247,5 +307,13 @@ def main(peerid, totalpeers, new_message_count, total_message_count, vz_server_p
     # Add an observer to do a clean exit when Dispersy is closed
     reactor.callInThread(stopOnDispersy, dispersy, reactor)
     # After 20 seconds, start the experiment
-    reactor.callLater(20.0, join_flood_overlay, dispersy, masterkey, peerid, totalpeers, new_message_count, total_message_count)
+    reactor.callLater(
+        20.0,
+        join_flood_overlay,
+     dispersy,
+     masterkey,
+     peerid,
+     totalpeers,
+     new_message_count,
+     total_message_count)
     reactor.run()

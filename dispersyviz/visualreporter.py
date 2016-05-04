@@ -1,6 +1,6 @@
 """Low-level interface for clients reporting to a VisualServer.
 
-To use first initialize the link (init_reporter) and then send 
+To use first initialize the link (init_reporter) and then send
 events (report_event).
 The following events are available:
  - VD_EVT_CONNECT: when joining a community
@@ -11,10 +11,12 @@ The following events are available:
 
 import socket
 
+
 def VD_EVT_CONNECT(myid, community_name):
     """Signal when a community is joined
     """
     return "CON" + str(myid) + "," + community_name
+
 
 def VD_EVT_COMMUNICATION(fromid, toid, community_name):
     """Signal when communication occurs from one id to
@@ -22,11 +24,13 @@ def VD_EVT_COMMUNICATION(fromid, toid, community_name):
     """
     return "COM" + str(fromid) + "," + str(toid) + "," + community_name
 
+
 def VD_CUSTOM_TARGET(myid, dict_entry, received, target):
-    """Signal when an experiment is getting closer to 
+    """Signal when an experiment is getting closer to
         its goal
     """
     return "CTM" + str(myid) + "," + dict_entry + "," + str(received) + "," + str(target)
+
 
 def VD_EVT_END(myid):
     """Signal when a node in the experiment wants to
@@ -35,6 +39,8 @@ def VD_EVT_END(myid):
     return "END" + str(myid)
 
 singleton_reporter = None
+
+
 def init_reporter(sock_addr):
     """Define the signal sink socket address
     """
@@ -42,14 +48,17 @@ def init_reporter(sock_addr):
     if not singleton_reporter:
         singleton_reporter = VisualReporter(sock_addr)
 
+
 def report_event(event):
     """Report a signal to some observer (if it exists)
     """
     global singleton_reporter
     singleton_reporter.report_event(event)
 
+
 class VisualReporter:
-    """Class to wrap a (sending) socket for communication 
+
+    """Class to wrap a (sending) socket for communication
         with a VisualServer.
     """
 
@@ -62,7 +71,7 @@ class VisualReporter:
 
     def report_event(self, event):
         """Send a string over the socket connection.
-            If the string contains an END event, busy wait 
+            If the string contains an END event, busy wait
             for the server to send the end confirmation.
             After confirmation, close the socket and return.
         """
@@ -76,4 +85,3 @@ class VisualReporter:
             except socket.error:
                 self.open = False
                 print "[WARNING] Trying to report to unreachable VisualServer"
-
