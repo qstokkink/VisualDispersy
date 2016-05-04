@@ -1,3 +1,6 @@
+"""Graphical User Interface for controlling Visual Dispersy classes.
+"""
+
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
@@ -12,15 +15,19 @@ import traceback
 import subprocess
 
 class MainWindow(Gtk.Window):
+    """The VisualDispersy Window object
+    """
 
     def __init__(self):
+        """Initialize all of the components in the window.
+        """
         Gtk.Window.__init__(self, title="DispersyViz")
         self.set_border_width(10)
         self.set_default_size(300, 500)
 
         # Inits
-        self.test_processes = []
-        self.numpeers = '3'
+        self.test_processes = []    # Maintain a list of all running processes
+        self.numpeers = '3'         # The amount of peers/nodes in the experiment
         
         # GUI stuff
         grid = Gtk.Grid()
@@ -68,6 +75,10 @@ class MainWindow(Gtk.Window):
         grid.attach_next_to(run_button, self.nummessages_entry, Gtk.PositionType.BOTTOM, 1, 1)
 
     def _correct_numpeers_input_to_int(self, widget, *args):
+        """Absolutely do not allow the amount of peers to be 
+            less than three, on input. Graph-tool starts
+            segfaulting and misbehaving if this is allowed.
+        """
         trimmed = widget.get_text().strip()
         # If there is input here
         if trimmed: 
@@ -97,6 +108,8 @@ class MainWindow(Gtk.Window):
         return (uscript, str(totalmsg))
 
     def _blocking_dialog(self, title, message_type, text):
+        """Generic dialog with title, type and text
+        """
         dialog = Gtk.MessageDialog(self,
                                      Gtk.DialogFlags.DESTROY_WITH_PARENT,
                                      message_type,
@@ -109,6 +122,16 @@ class MainWindow(Gtk.Window):
         self.set_sensitive(True) 
 
     def on_run(self, widget):
+        """Validate input when the run button is pressed.
+            Disables the main window while an experiment is in progress.
+
+            Validates:
+                1. The message count is a valid python expression
+                2. The selected experiment doesn't contain static errors
+                3. The selected experiment has a proper main method
+                4. The VisualServer gets launched correctly
+                5. (After exit) all of the processes are terminated
+        """
         selection = self.treeview.get_selection().get_selected()
         if selection[1]:            
             self.set_sensitive(False)
@@ -187,6 +210,7 @@ class MainWindow(Gtk.Window):
         else:
             self._blocking_dialog("ERROR", Gtk.MessageType.ERROR, "Are you trying to be clever?\nYou didn't select any class to run, poopieface.")
 
+# Outside of a __main__ check to avoid being imported
 win = MainWindow()
 win.connect("delete-event", Gtk.main_quit)
 win.show_all()

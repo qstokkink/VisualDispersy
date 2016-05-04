@@ -1,3 +1,14 @@
+"""Low-level interface for clients reporting to a VisualServer.
+
+To use first initialize the link (init_reporter) and then send 
+events (report_event).
+The following events are available:
+ - VD_EVT_CONNECT: when joining a community
+ - VD_EVT_COMMUNICATION: when two nodes interact
+ - VD_CUSTOM_TARGET: when an arbitrary goal is updated
+ - VD_EVT_END: when this client wants to exit
+"""
+
 import socket
 
 def VD_EVT_CONNECT(myid, community_name):
@@ -19,7 +30,7 @@ def VD_CUSTOM_TARGET(myid, dict_entry, received, target):
 
 def VD_EVT_END(myid):
     """Signal when a node in the experiment wants to
-        commit sudoku. Blocks until allowed by server.
+        exit. Blocks until allowed by server.
     """
     return "END" + str(myid)
 
@@ -38,13 +49,23 @@ def report_event(event):
     singleton_reporter.report_event(event)
 
 class VisualReporter:
+    """Class to wrap a (sending) socket for communication 
+        with a VisualServer.
+    """
 
     def __init__(self, sock_addr):
+        """Connect a streaming socket to a certain address
+        """
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._socket.connect(sock_addr)
         self.open = True
 
     def report_event(self, event):
+        """Send a string over the socket connection.
+            If the string contains an END event, busy wait 
+            for the server to send the end confirmation.
+            After confirmation, close the socket and return.
+        """
         if self.open:
             try:
                 self._socket.sendall(event + ";")
