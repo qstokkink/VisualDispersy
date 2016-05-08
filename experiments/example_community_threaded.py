@@ -208,6 +208,8 @@ def join_flood_overlay(
      total_message_count):
     """Join our custom FloodCommunity.
     """
+    
+    time.sleep(5.0)
 
     # Use our bogus master member
     master_member = dispersy.get_member(public_key=masterkey)
@@ -226,7 +228,8 @@ def join_flood_overlay(
     print "%d] Joined community" % (dispersy.lan_address[1])
 
     # Allow the Community members some time to find each other.
-    time.sleep(5.0)
+    while len(list(community.dispersy_yield_verified_candidates())) < totalpeers:
+        time.sleep(1.0)
 
     print "%d] Flooding community" % (dispersy.lan_address[1])
 
@@ -310,9 +313,8 @@ def main(
     # Add an observer to do a clean exit when Dispersy is closed
     reactor.callInThread(stopOnDispersy, dispersy, reactor)
     # After 20 seconds, start the experiment
-    reactor.callLater(
-        5.0,
-     join_flood_overlay,
+    reactor.callInThread(
+        join_flood_overlay,
      dispersy,
      masterkey,
      peerid,

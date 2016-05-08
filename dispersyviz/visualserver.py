@@ -42,7 +42,7 @@ class Visualizer:
                 num = num + 1
                 x = radius * math.cos(rads)
                 y = radius * math.sin(rads)
-                pmap[v] = [x + 0.2 * (radius if x > 0 else -radius), y]
+                pmap[v] = [x + 0.3 * (radius if x > 0 else -radius), y]
         return pmap
 
     def __init__(self, closecallback):
@@ -270,32 +270,45 @@ class VisualServer:
             Delegate input to the proper handler functions.
         """
         ended = False
+        buffered = ''
         while self.isopen and (not ended):
             data = None
             try:
-                data = connection.recv(1024)
+                data = connection.recv(4096)
             except socket.error:
                 continue
             if not data:
                 break
+            data = buffered + data
+            if not data.endswith(';'):
+                lpos = data.rfind(';')
+                if lpos < 0:
+                    buffered = data
+                    return
+                buffered = data[lpos+1:]
+                data = data[:lpos+1]
             for gdata in string.split(data, ';'):
                 if not gdata:
                     break
                 content = string.split(gdata[3:], ',')
-                if gdata.startswith('CON'):
-                    self.handle_connect(*content)
-                elif gdata.startswith('COM'):
-                    self.handle_communication(*content)
-                elif gdata.startswith('CTM'):
-                    self.handle_custom_target(*content)
-                elif gdata.startswith('END'):
-                    self.handle_end(*content)
-                    connection.sendall('OK')
-                    Gtk.main_quit()
-                    reactor.callFromThread(reactor.stop)
-                    self.close()
-                    ended = True
-                    break
+                try:
+                    if gdata.startswith('CON'):
+                        self.handle_connect(*content)
+                    elif gdata.startswith('COM'):
+                        self.handle_communication(*content)
+                    elif gdata.startswith('CTM'):
+                        self.handle_custom_target(*content)
+                    elif gdata.startswith('END'):
+                        self.handle_end(*content)
+                        connection.sendall('OK')
+                        Gtk.main_quit()
+                        reactor.callFromThread(reactor.stop)
+                        self.close()
+                        ended = True
+                        break
+                except TypeError:
+                    # Input was thusly maimed, we cannot recover
+                    continue
         connection.close()
 
     def close(self):
